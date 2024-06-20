@@ -1,5 +1,6 @@
 package com.voltmoney.carservicescheduler.service;
 
+import com.voltmoney.carservicescheduler.dto.GroupedAppointments;
 import com.voltmoney.carservicescheduler.dto.SlotResponseDTO;
 import com.voltmoney.carservicescheduler.model.Appointment;
 import com.voltmoney.carservicescheduler.model.AppointmentRequestDTO;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -147,7 +150,32 @@ public class SchedulerService {
         return appointments.isEmpty();
     }
 
-    public List<Appointment> getAllAppointments(){
-        return appointmentRepository.findAll();
+    public ResponseEntity<Object> getAllAppointments(){
+        List<Appointment> allAppointments= appointmentRepository.findAll();
+        List<GroupedAppointments> groupedAppointments = groupAppointmentsByServiceOperator(allAppointments);
+        log.info(groupedAppointments.toString());
+        return ResponseHandler.generateResponse(HttpStatus.OK,false,"Fetched all appointment successfully",groupedAppointments );
+//        groupedAppointments;
+    }
+    public List<GroupedAppointments> groupAppointmentsByServiceOperator(List<Appointment> appointments) {
+        // Group appointments by ServiceOperator
+        Map<ServiceOperator, List<Appointment>> groupedByOperator = appointments.stream()
+                .collect(Collectors.groupingBy(Appointment::getServiceOperator));
+
+        // Transform into the desired output format
+        List<GroupedAppointments> result = new ArrayList<>();
+
+        for (Map.Entry<ServiceOperator, List<Appointment>> entry : groupedByOperator.entrySet()) {
+            GroupedAppointments groupedAppointments = new GroupedAppointments(entry.getKey());
+
+            for (Appointment appointment : entry.getValue()) {
+                SlotResponseDTO slot = new SlotResponseDTO(appointment.getId(), appointment.getStartHour(), appointment.getEndHour());
+                groupedAppointments.getBookedSlots().add(slot);
+            }
+
+            result.add(groupedAppointments);
+        }
+
+        return result;
     }
 }

@@ -1,5 +1,6 @@
 package com.voltmoney.carservicescheduler.controller;
 
+import com.voltmoney.carservicescheduler.dto.GroupedAppointments;
 import com.voltmoney.carservicescheduler.dto.SlotResponseDTO;
 import com.voltmoney.carservicescheduler.model.Appointment;
 import com.voltmoney.carservicescheduler.model.AppointmentRequestDTO;
@@ -55,9 +56,9 @@ public class SchedulerController {
     }
 
     @GetMapping("/appointment")
-    public ResponseEntity<List<Appointment>> getALlAppointments(){
-        List<Appointment> appointments=schedulerService.getAllAppointments();
-        return ResponseEntity.ok(appointments);
+    public ResponseEntity<Object> getALlAppointments(){
+        return schedulerService.getAllAppointments();
+
     }
 
 }

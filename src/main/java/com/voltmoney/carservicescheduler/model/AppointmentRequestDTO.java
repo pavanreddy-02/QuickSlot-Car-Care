@@ -6,8 +6,6 @@ import lombok.Data;
 
 @Data
 public class AppointmentRequestDTO {
-//    @JsonProperty("appointmentId")
-//    long appointmentId;
     @JsonProperty("operatorId")
     long operatorId;
     @JsonProperty("startHour")
