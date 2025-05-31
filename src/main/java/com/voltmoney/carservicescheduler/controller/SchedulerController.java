@@ -3,6 +3,7 @@ package com.voltmoney.carservicescheduler.controller;
 import com.voltmoney.carservicescheduler.dto.SlotResponseDTO;
 import com.voltmoney.carservicescheduler.model.Appointment;
 import com.voltmoney.carservicescheduler.model.AppointmentRequestDTO;
+import com.voltmoney.carservicescheduler.model.BookAnyRequestDTO;
 import com.voltmoney.carservicescheduler.service.SchedulerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -60,4 +61,8 @@ public class SchedulerController {
         return ResponseEntity.ok(appointments);
     }
 
+    @PostMapping("/book-any")
+    public ResponseEntity<Object> bookAppointmentWithAnyOperator(@RequestBody BookAnyRequestDTO bookAnyRequestDTO) {
+        return schedulerService.bookAppointmentWithAnyOperator(bookAnyRequestDTO);
+    }
 }

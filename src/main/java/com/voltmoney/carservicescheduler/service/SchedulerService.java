@@ -3,6 +3,7 @@ package com.voltmoney.carservicescheduler.service;
 import com.voltmoney.carservicescheduler.dto.SlotResponseDTO;
 import com.voltmoney.carservicescheduler.model.Appointment;
 import com.voltmoney.carservicescheduler.model.AppointmentRequestDTO;
+import com.voltmoney.carservicescheduler.model.BookAnyRequestDTO;
 import com.voltmoney.carservicescheduler.model.ServiceOperator;
 import com.voltmoney.carservicescheduler.repository.AppointmentRepository;
 import com.voltmoney.carservicescheduler.repository.ServiceOperatorRepository;
@@ -149,5 +150,30 @@ public class SchedulerService {
 
     public List<Appointment> getAllAppointments(){
         return appointmentRepository.findAll();
+    }
+
+    public ResponseEntity<Object> bookAppointmentWithAnyOperator(BookAnyRequestDTO bookAnyRequestDTO) {
+        int startHour = bookAnyRequestDTO.getStartHour();
+        if (startHour < 0 || startHour > 23) {
+            return ResponseHandler.generateResponse(HttpStatus.BAD_REQUEST, true, "Invalid start time", null);
+        }
+
+        List<ServiceOperator> allOperators = operatorService.getAllServiceOperators();
+        if (allOperators == null || allOperators.isEmpty()) {
+            return ResponseHandler.generateResponse(HttpStatus.NOT_FOUND, true, "No service operators found in the system.", null);
+        }
+
+        for (ServiceOperator operator : allOperators) {
+            if (isSlotAvailable(operator.getId(), startHour)) {
+                Appointment appointment = new Appointment();
+                appointment.setServiceOperator(operator);
+                appointment.setStartHour(startHour);
+                appointment.setEndHour(startHour + 1);
+                Appointment savedAppointment = appointmentRepository.save(appointment);
+                return ResponseHandler.generateResponse(HttpStatus.CREATED, false, "Slot Booked with operator " + operator.getName(), savedAppointment);
+            }
+        }
+
+        return ResponseHandler.generateResponse(HttpStatus.CONFLICT, true, "No operator available for the selected time slot.", null);
     }
 }
