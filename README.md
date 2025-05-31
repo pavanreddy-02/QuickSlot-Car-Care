@@ -1,97 +1,100 @@
-# Car Service Scheduler
+# Car Service Scheduler API
 
-## Introduction
-Car Service Scheduler is a Java-based application designed to manage and schedule car services. The project uses Spring Boot for its backend framework and integrates with a SQL database for data persistence.
+This project is a Spring Boot application that provides a REST API for scheduling car service appointments with service operators.
+
+## Features
+
+- Book appointments with a specific service operator or any available operator.
+- Reschedule existing appointments.
+- Cancel appointments.
+- View all booked appointments for a specific operator.
+- View open (available) time slots for a specific operator, with consecutive slots merged.
 
 ## Prerequisites
-- **Java Development Kit (JDK) 8 or higher**: [Download and Install JDK](https://www.oracle.com/java/technologies/javase-downloads.html) or [OpenJDK](https://jdk.java.net/).
-- **SQL Workbench**: [Download SQL Workbench](https://www.sql-workbench.eu/).
-- **Apache Maven**: [Download and Install Maven](https://maven.apache.org/download.cgi).
-- **IntelliJ IDEA** (or any other Java IDE): [Download IntelliJ IDEA](https://www.jetbrains.com/idea/download/).
 
-## Installation and Setup
+- Java 17 or later
+- Maven
+- MySQL Server
 
-### Step 1: Download and Install Prerequisites
-1. **Install Java Development Kit (JDK)**
-    - Download and install JDK from the [Oracle JDK download page](https://www.oracle.com/java/technologies/javase-downloads.html) or [OpenJDK](https://jdk.java.net/).
-    - Ensure the `JAVA_HOME` environment variable is set and `java` and `javac` are in your system's PATH.
+## Setup and Running
 
-2. **Install SQL Workbench**
-    - Download and install SQL Workbench from the [SQL Workbench download page](https://www.sql-workbench.eu/).
+1.  **Database Setup:**
+    *   Ensure you have MySQL server running.
+    *   Create a database named `car_service_scheduler`. You can use the following SQL command:
+        ```sql
+        CREATE DATABASE car_service_scheduler;
+        ```
+    *   The application uses JPA with `hibernate.ddl-auto=update`, so tables will be created/updated automatically on startup.
+    *   Update the database username and password in `src/main/resources/application.properties` if they differ from the defaults (`root`/`P@1r3d2y@`).
+        ```properties
+        spring.datasource.username=your_mysql_username
+        spring.datasource.password=your_mysql_password
+        ```
 
-3. **Install Maven**
-    - Download Maven from the [Maven download page](https://maven.apache.org/download.cgi).
-    - Follow the installation instructions for your operating system.
+2.  **Build the Application:**
+    Open a terminal in the project root directory and run:
+    ```bash
+    ./mvnw clean package
+    ```
+    (or `mvnw.cmd clean package` on Windows)
 
-4. **Install IntelliJ IDEA**
-    - Download and install IntelliJ IDEA from the [IntelliJ IDEA download page](https://www.jetbrains.com/idea/download/).
+3.  **Run the Application:**
+    After a successful build, run the application using:
+    ```bash
+    java -jar target/carservicescheduler-0.0.1-SNAPSHOT.jar
+    ```
+    The application will start on port 8080 by default.
 
-### Step 2: Setup the Project
-1. **Extract the ZIP File**
-    - Download and save the `carservicescheduler.zip` file to a directory on your computer.
-    - Extract the contents of the ZIP file:
-        - On Windows: Right-click the file and select "Extract All".
-        - On macOS/Linux: Use a file archiver like `unzip` in the terminal.
+## API Endpoints
 
-2. **Open the Project in IntelliJ IDEA**
-    - Open IntelliJ IDEA.
-    - Click on `File -> Open` and navigate to the extracted `carservicescheduler` directory.
-    - Select the directory and open it.
+If no service operators exist (e.g., on first run with a new database), you will need to create them using the `POST /serviceoperators` endpoint. For example, you can create operators named `ServiceOperator0`, `ServiceOperator1`, and `ServiceOperator2`. You can then list them and find their IDs using `GET /serviceoperators`.
 
-### Step 3: Configure the Database
-1. **Setup Database Connection in `application.properties`**
-    - Open `src/main/resources/application.properties`.
-    - Configure the database connection properties:
-      ```properties
-      spring.datasource.url=jdbc:mysql://localhost:3306/carservice
-      spring.datasource.username=root
-      spring.datasource.password=password
-      spring.jpa.hibernate.ddl-auto=update
-      spring.jpa.show-sql=true
-      spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5Dialect
-      ```
+### Service Operators
 
-### Step 4: Add Maven Dependencies
-1. **Open `pom.xml` and add the required dependencies:**
-   ```xml
-   <dependencies>
-       <!-- Spring Boot Starter Data JPA -->
-       <dependency>
-           <groupId>org.springframework.boot</groupId>
-           <artifactId>spring-boot-starter-data-jpa</artifactId>
-       </dependency>
+-   `GET /serviceoperators`: Get all service operators.
+-   `GET /serviceoperators/{id}`: Get a specific service operator by ID.
+-   `POST /serviceoperators`: Create a new service operator. (Body: `ServiceOperator` JSON)
+    ```json
+    {
+        "name": "ServiceOperatorNew"
+    }
+    ```
+-   `PUT /serviceoperators/{id}`: Update a service operator. (Body: `ServiceOperator` JSON)
+-   `DELETE /serviceoperators/{id}`: Delete a service operator.
 
-       <!-- Spring Boot Starter Web -->
-       <dependency>
-           <groupId>org.springframework.boot</groupId>
-           <artifactId>spring-boot-starter-web</artifactId>
-       </dependency>
+### Scheduler
 
-       <!-- MySQL Connector -->
-       <dependency>
-           <groupId>mysql</groupId>
-           <artifactId>mysql-connector-java</artifactId>
-           <scope>runtime</scope>
-       </dependency>
+-   `POST /book`: Book an appointment for a specific operator.
+    *   Request Body (`AppointmentRequestDTO`):
+        ```json
+        {
+            "operatorId": 1,
+            "startHour": 9
+        }
+        ```
+-   `POST /book-any`: Book an appointment with any available operator for the given start hour.
+    *   Request Body (`BookAnyRequestDTO`):
+        ```json
+        {
+            "startHour": 10
+        }
+        ```
+-   `PUT /reschedule/{appointmentId}`: Reschedule an existing appointment.
+    *   Request Body (`AppointmentRequestDTO` - specifies the new operator and time):
+        ```json
+        {
+            "operatorId": 2,
+            "startHour": 14
+        }
+        ```
+-   `DELETE /cancel?appointmentId={appointmentId}`: Cancel an appointment by its ID.
+-   `GET /appointments?id={operatorId}`: Get all booked appointments for a specific operator.
+-   `GET /open-slots/?oid={operatorId}`: Get all open (available) time slots for a specific operator. Slots are presented as merged consecutive hours (e.g., "9-12").
+-   `GET /appointment`: Get all appointments booked in the system (for all operators).
 
-       <!-- Spring Boot Starter Test -->
-       <dependency>
-           <groupId>org.springframework.boot</groupId>
-           <artifactId>spring-boot-starter-test</artifactId>
-           <scope>test</scope>
-       </dependency>
-   </dependencies>
 
-Step 5: Build and Run the Project
-Build the Project Using Maven
+## Notes
 
-Open a terminal or use the IntelliJ terminal.
-Navigate to the project directory:
-
-cd path/to/carservicescheduler
-Run the Maven build command:
-
-mvn clean install
-Run the Application
-
-In IntelliJ IDEA, run the CarServiceSchedulerApplication class (usually found in src/main/java/com/yourcompany/carservicescheduler).
+-   Time is represented in 24-hour format (0-23).
+-   Appointments are for a single day context (no dates).
+-   Each appointment is 1 hour long.
